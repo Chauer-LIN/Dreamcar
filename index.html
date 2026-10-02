@@ -1,945 +1,1105 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1e40af">
-
-    <title> 全方位資產動態管理中心 (房產+股權雙引擎整合版)</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        input[type="range"] { accent-color: #2563eb; cursor: pointer; }
-        td, span { transition: all 0.15s ease-in-out; }
-        .tab-btn.active { border-bottom: 3px solid #4f46e5; color: #4f46e5; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台灣購車存錢與持有成本試算器 (Car Savings & TCO Calculator)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+    }
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans p-3 md:p-6 pb-24">
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
 
-    <!-- 頂部錯誤提示 -->
-    <div id="error_banner" class="max-w-7xl mx-auto mb-4 bg-rose-600 text-white p-3 rounded-xl shadow-lg text-center font-bold hidden">
-        ⚠️ 運算過程發生錯誤，請檢查數值格式。
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Taiwan CarTCO 🚗</h1>
+          <p class="text-xs text-slate-500 hidden sm:block">購車存錢與持有成本試算器（台灣專用）</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-2">
+        <button id="copy-summary-btn" class="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+          <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+          </svg>
+          複製分析摘要
+        </button>
+        <button onclick="window.print()" class="no-print inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+          <svg class="w-4 h-4 mr-1 sm:mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          列印
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Quick Scenario Presets Banner -->
+    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <span class="inline-flex p-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-semibold">
+          ⚡ 快速情境套用
+        </span>
+        <span class="text-xs sm:text-sm text-slate-600">點擊快速代入台灣常見購車情境參數：</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <button onclick="applyPreset('entry')" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition flex items-center justify-center space-x-1.5">
+          <span>🐣</span>
+          <span>國民小車 (75萬/1.5L)</span>
+        </button>
+        <button onclick="applyPreset('suv')" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition flex items-center justify-center space-x-1.5">
+          <span>🚙</span>
+          <span>百萬主流休旅 (120萬/2.0L)</span>
+        </button>
+        <button onclick="applyPreset('ev')" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition flex items-center justify-center space-x-1.5">
+          <span>⚡</span>
+          <span>豪華純電車 (220萬/EV)</span>
+        </button>
+      </div>
     </div>
 
-    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-        
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- LEFT COLUMN: Parameter Inputs (7 cols on lg) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- 1. 目標設定與儲蓄期程 (Goal & Savings Plan) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">1</span>
+              <h2 class="text-base font-bold text-slate-900">購車目標與存錢期程</h2>
+            </div>
+            <span class="text-xs text-slate-400">買車前規劃</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <div>
-                <h1 class="text-2xl md:text-3xl font-black tracking-wide flex items-center gap-2">
-                    <span>🏛️</span> Yicheng 全方位資產整合中心
-                </h1>
-                <p class="text-indigo-200 text-xs md:text-sm mt-1.5">
-                    整合「台美雙軌存股複利」與「不動產淨權益/房貸動態精算」，一站掌握真實淨資產與財務軌跡
-                </p>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">目標車價 (NT$)</label>
+              <div class="relative">
+                <input type="number" id="car-price" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-slate-800 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none transition font-medium" value="1150000" step="10000">
+                <span class="absolute right-3.5 top-2 text-xs text-slate-400">元</span>
+              </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <span class="text-xs bg-white/10 px-3 py-1.5 rounded-full border border-white/20">💾 本地自動儲存</span>
-                <button onclick="resetAllDefaults()" class="text-xs bg-rose-600 hover:bg-rose-700 px-3.5 py-1.5 rounded-full font-bold shadow transition cursor-pointer">
-                    ↻ 恢復預設
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">現有可用儲蓄 (NT$)</label>
+              <div class="relative">
+                <input type="number" id="current-savings" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-slate-800 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none transition font-medium" value="200000" step="10000">
+                <span class="absolute right-3.5 top-2 text-xs text-slate-400">元</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">預計存錢年限</label>
+              <div class="flex items-center space-x-2">
+                <input type="range" id="savings-years" min="0.5" max="8" step="0.5" value="3" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                <span id="savings-years-display" class="text-sm font-semibold text-brand-600 w-16 text-right">3 年</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">換算目標期間：<span id="savings-months-display" class="font-medium text-slate-600">36</span> 個月</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">個人/家計平均月收入 (NT$)</label>
+              <div class="relative">
+                <input type="number" id="monthly-income" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-slate-800 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none transition font-medium" value="65000" step="1000">
+                <span class="absolute right-3.5 top-2 text-xs text-slate-400">元</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">用於即時評估養車支出安全比例</p>
+            </div>
+          </div>
+
+          <!-- 購車付款方式選擇 -->
+          <div class="mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-3">
+              <label class="text-xs font-semibold text-slate-700">購車付款方式</label>
+              <div class="inline-flex rounded-lg p-0.5 bg-slate-100 text-xs">
+                <button type="button" id="pay-loan-btn" onclick="setPaymentType('loan')" class="px-3 py-1 font-medium rounded-md bg-white text-brand-700 shadow-sm transition">
+                  分期車貸
                 </button>
+                <button type="button" id="pay-cash-btn" onclick="setPaymentType('cash')" class="px-3 py-1 font-medium rounded-md text-slate-600 hover:text-slate-900 transition">
+                  全額現金買車
+                </button>
+              </div>
             </div>
-        </div>
 
-        <!-- 頂部即時核心資產摘要 (Master Dashboard) -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-slate-700">
-            <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">當前金融資產 (台+美)</span>
-                <span id="top_financial_assets" class="text-xl font-black text-indigo-700 mt-0.5 block">0 萬</span>
-                <span id="top_financial_split" class="text-[10px] text-slate-500 block"></span>
-            </div>
-            <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">房產實質到手淨值 (扣稅費與房貸)</span>
-                <span id="top_house_equity" class="text-xl font-black text-amber-700 mt-0.5 block">0 萬</span>
-                <span id="top_house_loan_sub" class="text-[10px] text-slate-500 block">扣除房貸與稅費</span>
-            </div>
-            <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">當前真實總淨資產 (Net Worth)</span>
-                <span id="top_total_networth" class="text-xl font-black text-emerald-600 mt-0.5 block">0 萬</span>
-                <span class="text-[10px] text-emerald-600 font-semibold block">金融資產 + 房產實拿現款</span>
-            </div>
-            <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">回台每月可用零用金 (平攤)</span>
-                <span id="top_pocket_money" class="text-xl font-black text-blue-600 mt-0.5 block">0 元</span>
-                <span id="top_mortgage_status" class="text-[10px] text-slate-500 block">房貸本息自動連動中</span>
-            </div>
-        </div>
-
-        <!-- 導航分頁籤 -->
-        <div class="flex border-b border-slate-200 bg-white px-6">
-            <button onclick="switchTab('simulation')" id="tab-simulation" class="tab-btn active py-3.5 px-4 text-sm font-bold flex items-center gap-2 cursor-pointer transition">
-                <span>📈</span> 生涯動態財富模擬
-            </button>
-            <button onclick="switchTab('property')" id="tab-property" class="tab-btn py-3.5 px-4 text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 cursor-pointer transition">
-                <span>🏡</span> 房地產淨值與房貸精算
-            </button>
-        </div>
-
-        <!-- 分頁 1: 生涯動態財富模擬 -->
-        <div id="view-simulation" class="p-4 md:p-6">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                <!-- 左側控制面板 -->
-                <div class="lg:col-span-4 bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-5">
-                    
-                    <!-- 賣房轉投資決策模組 -->
-                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-4 rounded-xl shadow-sm space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-black uppercase text-amber-900 flex items-center gap-1">
-                                <span>⚡</span> 策略情境：回台賣房結清？
-                            </span>
-                            <input type="checkbox" id="scenario_sell_house" onchange="updateSimulation()" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
-                        </div>
-                        <p class="text-[11px] text-amber-800 leading-relaxed">
-                            若勾選，系統會在 <strong>外派結束時 (2032)</strong> 將房產試算所得之<strong>淨獲利 (<span id="span_house_net_profit_inject">0</span> 萬)</strong> 一次性注入股票部位，並自動消除後續房貸本息與租金現金流！
-                        </p>
-                    </div>
-
-                    <!-- 資金庫存 -->
-                    <div class="space-y-3">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">目前股票現值 (萬台幣)</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">🇹🇼 台股現值</label>
-                                <input type="number" id="current_tw" step="0.1" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">🇺🇸 美股現值</label>
-                                <input type="number" id="current_us" step="0.1" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 年化報酬率與配息 -->
-                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-3">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-800">📊 預估報酬率與殖利率 (%)</h3>
-                        <div>
-                            <div class="flex justify-between text-xs font-medium text-slate-600">
-                                <span>🇹🇼 台股年化報酬率</span>
-                                <span id="val_tw_return_rate" class="text-amber-700 font-bold">10.0%</span>
-                            </div>
-                            <input type="range" id="tw_return_rate" min="0" max="20" step="0.5" class="w-full h-1.5 bg-amber-200 rounded-lg mt-1">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-xs font-medium text-slate-600">
-                                <span>🇺🇸 美股年化報酬率</span>
-                                <span id="val_us_return_rate" class="text-emerald-700 font-bold">10.0%</span>
-                            </div>
-                            <input type="range" id="us_return_rate" min="0" max="20" step="0.5" class="w-full h-1.5 bg-emerald-200 rounded-lg mt-1">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-xs font-medium text-slate-600">
-                                <span>🇹🇼 台股殖利率 (現金流)</span>
-                                <span id="val_tw_div_rate" class="text-amber-700 font-bold">3.0%</span>
-                            </div>
-                            <input type="range" id="tw_div_rate" min="0" max="8" step="0.1" class="w-full h-1.5 bg-amber-200 rounded-lg mt-1">
-                        </div>
-                    </div>
-
-                    <!-- 階段一：外派期 -->
-                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-3">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">第一階段：外派期 (前 5 年)</h3>
-                        <div>
-                            <div class="flex justify-between text-xs text-slate-600">
-                                <span>🇹🇼 台股月投</span>
-                                <span id="val_india_tw" class="font-bold text-amber-700">20,000</span>
-                            </div>
-                            <input type="range" id="india_tw" min="0" max="100000" step="5000" class="w-full h-1.5 bg-amber-200 rounded-lg mt-1">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-xs text-slate-600">
-                                <span>🇺🇸 美股月投</span>
-                                <span id="val_india_us" class="font-bold text-emerald-700">60,000</span>
-                            </div>
-                            <input type="range" id="india_us" min="0" max="100000" step="5000" class="w-full h-1.5 bg-emerald-200 rounded-lg mt-1">
-                        </div>
-                    </div>
-
-                    <!-- 階段二：回台期 -->
-                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-3">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">第二階段：回台深耕期 (2032 起)</h3>
-                        <div>
-                            <div class="flex justify-between text-xs text-slate-600">
-                                <span>本島月薪</span>
-                                <span id="val_tw_salary" class="font-bold text-blue-600">55,000</span>
-                            </div>
-                            <input type="range" id="tw_salary" min="0" max="150000" step="5000" class="w-full h-1.5 bg-slate-200 rounded-lg mt-1">
-                        </div>
-                        <div id="wrapper_tw_rent">
-                            <div class="flex justify-between text-xs text-slate-600">
-                                <span>房租收入</span>
-                                <span id="val_tw_rent" class="font-bold text-blue-600">22,000</span>
-                            </div>
-                            <input type="range" id="tw_rent" min="0" max="50000" step="1000" class="w-full h-1.5 bg-slate-200 rounded-lg mt-1">
-                        </div>
-                        <div id="wrapper_tw_mortgage">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs text-slate-600 font-medium">房貸月付本息 (元)</label>
-                                <span class="text-[10px] text-emerald-600 font-semibold">⚡ 與房產精算即時連動</span>
-                            </div>
-                            <input type="number" id="tw_mortgage" class="w-full bg-slate-100 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm font-bold text-slate-800 shadow-sm" readonly>
-                        </div>
-                        
-                        <div class="p-3 bg-blue-50/50 rounded-lg border border-blue-100 space-y-2.5">
-                            <div>
-                                <div class="flex justify-between text-xs text-slate-600">
-                                    <span>日常生活開銷</span>
-                                    <span id="val_tw_living" class="font-bold text-rose-600">20,000</span>
-                                </div>
-                                <input type="range" id="tw_living" min="10000" max="100000" step="1000" class="w-full h-1.5 bg-slate-200 rounded-lg mt-1" style="accent-color: #e11d48;">
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-xs text-slate-600">
-                                    <span>回台【台股月投】</span>
-                                    <span id="val_tw_tw" class="font-bold text-amber-700">10,000</span>
-                                </div>
-                                <input type="range" id="tw_tw" min="0" max="100000" step="1000" class="w-full h-1 bg-amber-200 rounded mt-1">
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-xs text-slate-600">
-                                    <span>回台【美股月投】</span>
-                                    <span id="val_tw_us" class="font-bold text-emerald-700">30,000</span>
-                                </div>
-                                <input type="range" id="tw_us" min="0" max="100000" step="1000" class="w-full h-1 bg-emerald-200 rounded mt-1">
-                            </div>
-                        </div>
-                    </div>
-
+            <!-- 車貸詳細設定 (若選擇現金則隱藏) -->
+            <div id="loan-options-panel" class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-600 mb-1">頭期款比例 (%)</label>
+                <div class="relative">
+                  <input type="number" id="down-payment-ratio" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-1 focus:ring-brand-500 font-semibold" value="30" min="0" max="95">
+                  <span class="absolute right-3 top-1.5 text-xs text-slate-400">%</span>
                 </div>
+                <div class="text-[11px] text-slate-400 mt-1">金額：<span id="down-payment-amt-display" class="font-medium text-slate-700">NT$ 345,000</span></div>
+              </div>
 
-                <!-- 右側圖表與明細表格 -->
-                <div class="lg:col-span-8 space-y-6">
-                    
-                    <!-- 資產成長圖表與枯水期卡片 -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="md:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <h2 class="text-sm font-bold text-slate-700">📈 長期資產演進模擬曲線 (萬)</h2>
-                                <span id="badge_scenario" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">持有房產</span>
-                            </div>
-                            <div class="h-56 w-full">
-                                <canvas id="wealthChart"></canvas>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3 flex flex-col justify-between">
-                            <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-sm">
-                                <span class="block text-[11px] font-bold text-indigo-900 uppercase">🎯 建議每月平攤「零用錢」</span>
-                                <span id="card_smoothed_money" class="text-2xl font-black text-indigo-700 mt-0.5 block">0 元</span>
-                                <span class="block text-[10px] text-indigo-600 mt-1">納入台股全年股息平攤後之餘裕</span>
-                            </div>
-                            <div id="emergency_fund_card" class="bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-sm">
-                                <span class="block text-[11px] font-bold text-amber-900 uppercase">🛡️ 回台 1~6 月活存水位儲備</span>
-                                <span id="val_emergency_fund" class="text-lg font-black text-amber-700 mt-0.5 block">0 元</span>
-                                <span class="block text-[10px] text-amber-600 mt-1">用於度過上半年股息空窗期</span>
-                            </div>
-                        </div>
-                    </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-600 mb-1">車貸分期年限</label>
+                <select id="loan-years" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-1 focus:ring-brand-500 bg-white font-medium">
+                  <option value="2">2 年 (24 期)</option>
+                  <option value="3">3 年 (36 期)</option>
+                  <option value="4">4 年 (48 期)</option>
+                  <option value="5" selected>5 年 (60 期)</option>
+                  <option value="6">6 年 (72 期)</option>
+                  <option value="7">7 年 (84 期)</option>
+                </select>
+              </div>
 
-                    <!-- 回台第一年收支明細表 -->
-                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
-                            <h2 class="text-sm font-bold text-slate-700">📅 2032 回台第一年 1~12 月現金流透視</h2>
-                            <div class="text-right">
-                                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-medium">
-                                    外派結束總金融資產：<strong id="span_stage1_asset" class="text-indigo-600">0</strong> 萬
-                                </span>
-                            </div>
-                        </div>
-                        <div class="mt-3 overflow-x-auto max-h-48 overflow-y-auto">
-                            <table class="w-full text-left text-xs whitespace-nowrap">
-                                <thead class="bg-slate-800 text-white sticky top-0 z-10">
-                                    <tr>
-                                        <th class="p-2 text-center">月份</th>
-                                        <th class="p-2 bg-amber-900 text-center">當月台股息(+)</th>
-                                        <th class="p-2 text-center">常態收入 (薪資+租金)</th>
-                                        <th class="p-2 bg-rose-900 text-center">固定總扣款 (房貸+生活+存股)</th>
-                                        <th class="p-2 text-center">實體銀行結餘</th>
-                                        <th class="p-2 bg-blue-900 text-center">平攤可用預算</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="detailed_month_table" class="divide-y divide-slate-100 text-slate-700"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 里程碑 -->
-                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                        <h2 class="text-sm font-bold text-slate-700 border-b pb-2 border-slate-200">🏆 財富里程碑結構拆解</h2>
-                        <div class="mt-3 overflow-hidden">
-                            <table class="w-full text-left text-xs md:text-sm">
-                                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                                    <tr>
-                                        <th class="p-2.5">目標里程碑</th>
-                                        <th class="p-2.5">達成年齡</th>
-                                        <th class="p-2.5">金融資產結構透視 (台股 / 美股)</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 text-slate-700">
-                                    <tr class="hover:bg-amber-50/40">
-                                        <td class="p-2.5 font-bold text-amber-900">🎯 2,500 萬大關</td>
-                                        <td class="p-2.5 font-bold text-amber-700" id="m_2500">計算中...</td>
-                                        <td class="p-2.5" id="s_2500">...</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-2.5 font-bold text-slate-800">🎯 3,000 萬大關</td>
-                                        <td class="p-2.5 font-bold text-slate-800" id="m_3000">計算中...</td>
-                                        <td class="p-2.5" id="s_3000">...</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-2.5 font-bold text-slate-800">🎯 4,000 萬大關</td>
-                                        <td class="p-2.5 font-bold text-slate-800" id="m_4000">計算中...</td>
-                                        <td class="p-2.5" id="s_4000">...</td>
-                                    </tr>
-                                    <tr class="hover:bg-indigo-50/40">
-                                        <td class="p-2.5 font-bold text-indigo-900">🎯 5,000 萬大關</td>
-                                        <td class="p-2.5 font-bold text-indigo-700" id="m_5000">計算中...</td>
-                                        <td class="p-2.5" id="s_5000">...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
+              <div>
+                <label class="block text-[11px] font-medium text-slate-600 mb-1">車貸年利率 (%)</label>
+                <div class="relative">
+                  <input type="number" id="loan-rate" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-1 focus:ring-brand-500 font-semibold" value="2.8" step="0.1" min="0">
+                  <span class="absolute right-3 top-1.5 text-xs text-slate-400">%</span>
                 </div>
+                <div class="text-[11px] text-slate-400 mt-1">新車普遍約 2.5% ~ 3.5%</div>
+              </div>
             </div>
+          </div>
         </div>
 
-        <!-- 分頁 2: 房地產淨值與房貸精算 -->
-        <div id="view-property" class="p-4 md:p-6 hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                <!-- 房產與稅費設定 -->
-                <div class="lg:col-span-5 space-y-4">
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                        <h2 class="text-sm font-bold text-slate-800 border-b pb-2 border-slate-200">1. 基本交易與增值設定</h2>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">預估目前/賣出總價 (元)</label>
-                            <input type="number" id="sellPrice" value="8000000" step="100000" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">原始買入總價 (元)</label>
-                            <input type="number" id="buyPrice" value="6000000" step="100000" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">可扣抵成本 (裝潢/修繕規費) (元)</label>
-                            <input type="number" id="renovationCost" value="500000" step="10000" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm shadow-sm">
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                        <h2 class="text-sm font-bold text-slate-800 border-b pb-2 border-slate-200">2. 稅率與交易成本設定</h2>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">持有期間 (房地合一稅率)</label>
-                            <select id="holdingPeriod" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm shadow-sm">
-                                <option value="0.45">2 年內 (45%)</option>
-                                <option value="0.35" selected>2 ~ 5 年 (35%)</option>
-                                <option value="0.20">5 ~ 10 年 (20%)</option>
-                                <option value="0.15">10 年以上 (15%)</option>
-                            </select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">仲介服務費 (%)</label>
-                                <input type="number" id="agencyFeePct" value="4.0" step="0.1" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">土地增值稅 (元)</label>
-                                <input type="number" id="landTax" value="50000" step="5000" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm shadow-sm">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">代書與規費 (元)</label>
-                            <input type="number" id="docFee" value="3000" step="500" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm shadow-sm">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 房貸條件與結算 -->
-                <div class="lg:col-span-7 space-y-4">
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
-                        <h2 class="text-sm font-bold text-slate-800 border-b pb-2 border-slate-200">3. 房貸條件與階梯利率</h2>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                            <div>
-                                <label class="block text-xs text-slate-600 font-semibold mb-1">原始貸款總額</label>
-                                <input type="number" id="loanAmount" value="5640000" step="50000" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-slate-600 font-semibold mb-1">總期數 (月)</label>
-                                <input type="number" id="totalMonths" value="360" step="12" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-slate-600 font-semibold mb-1">寬限期 (月)</label>
-                                <input type="number" id="gracePeriod" value="36" step="12" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-slate-600 font-semibold mb-1">已繳期數 (含寬限期)</label>
-                                <input type="number" id="monthsPaid" value="44" min="1" step="1" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs shadow-sm font-bold text-blue-700">
-                            </div>
-                        </div>
-
-                        <!-- 階梯利率清單 -->
-                        <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold text-slate-700">階梯利率設定 (按期數生效)</span>
-                                <button onclick="addRateRow()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer">➕ 新增利率變動區間</button>
-                            </div>
-                            <div id="rateContainer" class="space-y-2"></div>
-                        </div>
-
-                        <!-- 房貸動態連動提示卡片 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                            <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl shadow-sm">
-                                <span class="text-[11px] font-bold text-emerald-800 block">目前已繳期數之「剩餘房貸」</span>
-                                <span id="remainingBalanceDisplay" class="text-xl font-black text-emerald-700 mt-1 block">0 元</span>
-                            </div>
-                            <div class="bg-blue-50 border border-blue-200 p-3.5 rounded-xl shadow-sm">
-                                <div class="flex justify-between items-center">
-                                    <span id="stage2_mortgage_title" class="text-[11px] font-bold text-blue-800 block">
-                                        回台時預估月付房貸
-                                    </span>
-                                    <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-semibold">
-                                        ⚡ 已自動同步
-                                    </span>
-                                </div>
-                                <span id="stage2_calc_mortgage" class="text-xl font-black text-blue-700 mt-1 block">0 元</span>
-                                <span id="stage2_mortgage_subtext" class="text-[10px] text-blue-600 block mt-0.5">計算中...</span>
-                            </div>
-                        </div>
-
-                        <!-- 攤還表明細 -->
-                        <details class="text-xs">
-                            <summary class="font-bold text-slate-600 cursor-pointer hover:text-slate-800">點擊查看前 60 期攤還明細表</summary>
-                            <div class="mt-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
-                                <table class="w-full text-right text-[11px]">
-                                    <thead class="bg-slate-100 text-slate-700 sticky top-0">
-                                        <tr>
-                                            <th class="p-1.5 text-center">期數</th>
-                                            <th class="p-1.5">年利率</th>
-                                            <th class="p-1.5">月付本息</th>
-                                            <th class="p-1.5">當期還本</th>
-                                            <th class="p-1.5">剩餘本金</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="amortizationTableBody" class="divide-y divide-slate-100"></tbody>
-                                </table>
-                            </div>
-                        </details>
-                    </div>
-
-                    <!-- 賣屋結算成果 -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 space-y-2.5 shadow-sm">
-                        <h2 class="text-sm font-bold text-slate-800 border-b pb-2 border-slate-200">🎉 房產賣出淨利結算透視</h2>
-                        <div class="space-y-1.5 text-xs">
-                            <div class="flex justify-between"><span>預估賣出總價</span><strong id="sumSellPrice">0</strong></div>
-                            <div class="flex justify-between text-rose-600"><span>扣除：剩餘房貸本金</span><strong id="sumLoanBalance">- 0</strong></div>
-                            <div class="flex justify-between text-rose-600"><span>扣除：仲介服務費</span><strong id="sumAgencyFee">- 0</strong></div>
-                            <div class="flex justify-between text-rose-600"><span>扣除：履約保證費 (0.015%)</span><strong id="sumEscrowFee">- 0</strong></div>
-                            <div class="flex justify-between text-rose-600"><span>扣除：土地增值稅與代書費</span><strong id="sumLandAndDocFee">- 0</strong></div>
-                            <div class="flex justify-between text-rose-600"><span>扣除：房地合一稅 (<span id="sumTaxRate"></span>%)</span><strong id="sumCapitalGainsTax">- 0</strong></div>
-                        </div>
-                        <div class="mt-3 bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-sm">
-                            <span class="text-xs font-bold text-amber-800 block">預估實體到手現金淨利</span>
-                            <span id="finalNetProfit" class="text-3xl font-black text-amber-700 mt-1 block">0 元</span>
-                        </div>
-                    </div>
-                </div>
-
+        <!-- 2. 交車與前期花費 (Delivery & Upfront Costs) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center text-sm">2</span>
+              <h2 class="text-base font-bold text-slate-900">交車落地與前期一次性費用</h2>
             </div>
+            <span class="text-xs text-slate-400">交車當日需備妥</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">領牌規費/代辦/驗車</label>
+              <div class="relative">
+                <input type="number" id="fee-registration" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="3500">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">元</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">行照費、檢驗規費及代辦費</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">選號費 / 鐵牌費</label>
+              <div class="relative">
+                <input type="number" id="fee-plate" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="2000">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">元</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">自選號碼 NT$2,000 起或順號</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">配件升級 (隔熱紙/行車記錄器)</label>
+              <div class="relative">
+                <input type="number" id="fee-accessories" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="25000">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">元</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">前後雙鏡頭、高級隔熱紙或鍍膜</p>
+            </div>
+          </div>
+          <div class="mt-3 text-right">
+            <span class="text-xs text-slate-500">一次性交車規費小計：</span>
+            <span id="delivery-total-display" class="text-sm font-bold text-slate-800">NT$ 30,500</span>
+          </div>
         </div>
+
+        <!-- 3. 台灣在地養車固定成本 (Fixed Annual & Monthly Costs) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 font-bold flex items-center justify-center text-sm">3</span>
+              <h2 class="text-base font-bold text-slate-900">台灣養車固定成本 (稅費 / 車險 / 租車位)</h2>
+            </div>
+            <span class="text-xs text-slate-400">每年/每月固定支出</span>
+          </div>
+
+          <div class="space-y-4 mt-4">
+            <!-- 台灣排氣量級距選單 -->
+            <div class="bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/60">
+              <label class="block text-xs font-bold text-amber-900 mb-1.5">
+                🏛️ 台灣小客車排氣量級距 (自動代入牌照稅 + 燃料費)
+              </label>
+              <select id="engine-tax-bracket" class="w-full px-3 py-2 rounded-xl border border-amber-200 text-xs sm:text-sm bg-white font-medium text-slate-800">
+                <option value="5040">600cc 以下 (牌照 $2,160 + 燃料 $2,880 = 年繳 $5,040)</option>
+                <option value="8640">601cc - 1,200cc (牌照 $4,320 + 燃料 $4,320 = 年繳 $8,640)</option>
+                <option value="11920">1,201cc - 1,800cc (牌照 $7,120 + 燃料 $4,800 = 年繳 $11,920)</option>
+                <option value="17410" selected>1,801cc - 2,400cc (牌照 $11,230 + 燃料 $6,180 = 年繳 $17,410)</option>
+                <option value="22410">2,401cc - 3,000cc (牌照 $15,210 + 燃料 $7,200 = 年繳 $22,410)</option>
+                <option value="38030">3,001cc - 4,200cc (牌照 $28,220 + 燃料 $9,810 = 年繳 $38,030)</option>
+                <option value="0">純電動車 EV (現行免徵牌照稅與汽燃費 = 年繳 $0)</option>
+                <option value="custom">自訂稅費總和</option>
+              </select>
+              <div id="custom-tax-panel" class="hidden mt-2 flex items-center space-x-2">
+                <span class="text-xs text-slate-600">自訂年稅金：</span>
+                <input type="number" id="custom-tax-input" class="w-32 px-2.5 py-1 text-xs border rounded-lg" value="17410">
+                <span class="text-xs text-slate-500">元/年</span>
+              </div>
+            </div>
+
+            <!-- 車險與停車位 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">年度車體險與強制責任險</label>
+                <select id="insurance-plan" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium text-slate-800">
+                  <option value="36000" selected>乙式車體險 + 第三人/超額/強制險 (~$36,000/年)</option>
+                  <option value="18000">丙式車碰車險 + 第三人/超額/強制險 (~$18,000/年)</option>
+                  <option value="7500">僅第三人責任險 + 超額 + 強制險 (~$7,500/年)</option>
+                  <option value="custom">自訂保險金額</option>
+                </select>
+                <div id="custom-ins-panel" class="hidden mt-1.5 flex items-center space-x-2">
+                  <span class="text-xs text-slate-600">自訂年保費：</span>
+                  <input type="number" id="custom-ins-input" class="w-28 px-2 py-1 text-xs border rounded-lg" value="36000">
+                  <span class="text-xs text-slate-500">元/年</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">固定車位月租 (住家 / 公司)</label>
+                <div class="relative">
+                  <input type="number" id="fee-parking-fixed" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="3500">
+                  <span class="absolute right-3 top-2 text-xs text-slate-400">元/月</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">若自有免費車位可填 0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 日常浮動與消耗保養成本 (Variable Costs & Maintenance) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center space-x-2.5">
+              <span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 font-bold flex items-center justify-center text-sm">4</span>
+              <h2 class="text-base font-bold text-slate-900">日常燃油/電費、保養維修與浮動支出</h2>
+            </div>
+            <span class="text-xs text-slate-400">里程與使用度連動</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">預估每月行駛里程</label>
+              <div class="relative">
+                <input type="number" id="monthly-km" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="1200" step="50">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">km/月</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">平均油耗 / 電耗</label>
+              <div class="relative">
+                <input type="number" id="fuel-economy" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="13.5" step="0.5">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">km/L</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">電車請輸入每度電里程 (km/kWh)</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">每單位燃油 / 電價</label>
+              <div class="relative">
+                <input type="number" id="fuel-price" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="31.5" step="0.1">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">元/L</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">95無鉛油價或度電費</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">年均保養耗材與換胎平攤</label>
+              <div class="relative">
+                <input type="number" id="fee-maintenance-yearly" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="16000" step="1000">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">元/年</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">含大小保養、煞車、輪胎折舊</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">eTag 高速公路通行費</label>
+              <div class="relative">
+                <input type="number" id="fee-etag-monthly" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="500" step="100">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">元/月</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">外出臨停與洗車美容備用</label>
+              <div class="relative">
+                <input type="number" id="fee-misc-monthly" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 font-medium" value="1000" step="100">
+                <span class="absolute right-3 top-2 text-xs text-slate-400">元/月</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Real-Time Results & Analytics Dashboard (5 cols on lg) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- Result KPI Highlight Cards -->
+        <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-36 h-36 bg-brand-500/10 rounded-full blur-2xl"></div>
+
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">試算即時總結</span>
+            <span id="health-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              財務健康評估良好
+            </span>
+          </div>
+
+          <!-- KPI 1: 存錢目標 -->
+          <div class="mt-4">
+            <p class="text-xs text-slate-300">🎯 買車前：每月需存金額</p>
+            <div class="flex items-baseline space-x-2 mt-1">
+              <span id="kpi-monthly-savings" class="text-3xl sm:text-4xl font-extrabold text-amber-400 font-mono tracking-tight">NT$ 0</span>
+              <span class="text-xs text-slate-400">/ 月</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              需再存積蓄：<span id="kpi-total-target-needed" class="font-semibold text-white">NT$ 0</span>（含前期落地規費）
+            </p>
+          </div>
+
+          <!-- Divider -->
+          <div class="my-4 border-t border-slate-800"></div>
+
+          <!-- KPI 2: 養車成本 -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs text-slate-300">💳 每月平均養車成本</p>
+              <div class="flex items-baseline space-x-1.5 mt-1">
+                <span id="kpi-monthly-tco" class="text-xl sm:text-2xl font-bold text-white font-mono">NT$ 0</span>
+                <span class="text-[11px] text-slate-400">/ 月</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1" id="kpi-loan-note">含車貸期供</p>
+            </div>
+
+            <div>
+              <p class="text-xs text-slate-300">📅 年總持有成本 (TCO)</p>
+              <div class="flex items-baseline space-x-1.5 mt-1">
+                <span id="kpi-yearly-tco" class="text-xl sm:text-2xl font-bold text-indigo-300 font-mono">NT$ 0</span>
+                <span class="text-[11px] text-slate-400">/ 年</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">純年經常支出 (不含本金)</p>
+            </div>
+          </div>
+
+          <!-- 薪資佔比與健康狀態 -->
+          <div class="mt-4 pt-4 border-t border-slate-800/80">
+            <div class="flex justify-between items-center text-xs mb-1.5">
+              <span class="text-slate-300">養車月支出佔月薪比例：</span>
+              <span id="kpi-income-ratio" class="font-bold font-mono text-emerald-400">0%</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+              <div id="health-progress" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 25%"></div>
+            </div>
+            <p id="health-advice" class="text-[11px] text-slate-300 mt-2 leading-relaxed">
+              💡 養車支出控制在月薪 20% 以內，生活品質與儲蓄彈性最佳。
+            </p>
+          </div>
+        </div>
+
+        <!-- 視覺化圖表 1: 儲蓄累積曲線 (Chart 1) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
+              <span>📈</span>
+              <span>儲蓄累積進度模擬曲線</span>
+            </h3>
+            <span class="text-xs text-slate-500 font-medium">達標時間軸</span>
+          </div>
+          <div class="h-48 w-full relative">
+            <canvas id="savingsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 視覺化圖表 2: 每月養車費用分佈圓餅圖 (Chart 2) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
+              <span>🥧</span>
+              <span>每月持有支出結構分析</span>
+            </h3>
+            <span class="text-xs text-slate-500 font-medium">月攤提比例</span>
+          </div>
+          <div class="h-52 w-full relative">
+            <canvas id="costBreakdownChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 詳細項目攤提對帳表 (Collapsible / Clean Table) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
+            <span>📋 每月養車費用明細對帳單</span>
+            <span class="text-xs font-normal text-slate-400">平均每月攤提</span>
+          </h3>
+
+          <div class="space-y-2 text-xs">
+            <div id="row-loan" class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">車貸月付款 (本息平均攤還)</span>
+              <span id="detail-loan" class="font-semibold text-slate-900 font-mono">NT$ 0</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">燃油 / 電力能源支出</span>
+              <span id="detail-fuel" class="font-semibold text-slate-900 font-mono">NT$ 0</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">固定停車位月租</span>
+              <span id="detail-parking-fixed" class="font-semibold text-slate-900 font-mono">NT$ 0</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">車輛牌照稅 + 燃料費 (月攤提)</span>
+              <span id="detail-tax" class="font-semibold text-slate-900 font-mono">NT$ 0</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">汽車保險費用 (月攤提)</span>
+              <span id="detail-insurance" class="font-semibold text-slate-900 font-mono">NT$ 0</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">定期保養與換胎折舊 (月攤提)</span>
+              <span id="detail-maintenance" class="font-semibold text-slate-900 font-mono">NT$ 0</span>
+            </div>
+            <div class="flex justify-between py-1.5">
+              <span class="text-slate-600">eTag 通行費與出外臨停雜支</span>
+              <span id="detail-misc" class="font-semibold text-slate-900 font-mono">NT$ 0</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
     </div>
 
-    <script>
-        // 預設參數集合
-        const defaultSettings = {
-            current_tw: "403.4", current_us: "41.8",
-            tw_return_rate: "10.0", us_return_rate: "10.0",
-            tw_div_rate: "3.0",
-            india_tw: "20000", india_us: "60000",
-            tw_salary: "55000", tw_rent: "22000",
-            tw_mortgage: "23698", tw_living: "20000",
-            tw_tw: "10000", tw_us: "30000",
-            scenario_sell_house: false,
+    <!-- 台灣買車貼心實務須知 FAQ / Tips -->
+    <div class="bg-indigo-50/60 rounded-2xl p-5 border border-indigo-100 text-xs text-slate-700 leading-relaxed space-y-2 mt-8">
+      <h4 class="font-bold text-indigo-900 text-sm flex items-center space-x-1.5">
+        <span>💡</span>
+        <span>台灣買車理財小提醒</span>
+      </h4>
+      <p>• <strong>「買車容易養車難」：</strong>除了車價本體，以台灣主流 1.8L~2.0L 國產或進口家庭車而言，每年固定規費（稅金+乙丙式保險+租車位）常態即高達 8~12 萬元，尚未計算車貸本息與日常油錢。</p>
+      <p>• <strong>健康預算原則：</strong>理財顧問一般建議，全車持有與車貸月供總合應<strong>不超過個人或家庭月實質收入的 20%~25%</strong>，以防突發意外維修或利率波動衝擊生活現金流。</p>
+      <p>• <strong>折舊成本：</strong>新車前 3 年折舊率通常高達 30%~45%，若資金較為吃緊，亦可評估優質原廠認證中古車。</p>
+    </div>
 
-            sellPrice: "8000000", buyPrice: "6000000",
-            renovationCost: "500000", holdingPeriod: "0.35",
-            agencyFeePct: "4.0", docFee: "3000", landTax: "50000",
-            loanAmount: "5640000", totalMonths: "360",
-            gracePeriod: "36", monthsPaid: "44"
-        };
+  </main>
 
-        let rateData = [
-            { start: 1, rate: 2.26 },
-            { start: 37, rate: 2.41 }
-        ];
+  <!-- Notification Toast Modal -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition duration-300 pointer-events-none z-50 flex items-center space-x-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <span id="toast-message">已複製分析摘要到剪貼簿！</span>
+  </div>
 
-        let wealthChartInstance = null;
-        let cachedPropertyNetProfit = 0;
-        let cachedStage2Mortgage = 23698;
-        let cachedRemainingLoan = 0;
+  <script>
+    // Global State
+    let paymentType = 'loan'; // 'loan' or 'cash'
+    let savingsChartInstance = null;
+    let costBreakdownChartInstance = null;
 
-        function formatCurrency(num) {
-            return Math.round(num).toLocaleString('zh-TW');
+    // Format Number to Taiwan NT Currency string
+    function formatNT(num) {
+      if (isNaN(num) || num === null) return 'NT$ 0';
+      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
+    }
+
+    // Set Payment Mode
+    function setPaymentType(type) {
+      paymentType = type;
+      const loanBtn = document.getElementById('pay-loan-btn');
+      const cashBtn = document.getElementById('pay-cash-btn');
+      const loanPanel = document.getElementById('loan-options-panel');
+      const loanRow = document.getElementById('row-loan');
+      const loanNote = document.getElementById('kpi-loan-note');
+
+      if (type === 'loan') {
+        loanBtn.className = "px-3 py-1 font-medium rounded-md bg-white text-brand-700 shadow-sm transition";
+        cashBtn.className = "px-3 py-1 font-medium rounded-md text-slate-600 hover:text-slate-900 transition";
+        loanPanel.classList.remove('hidden');
+        loanRow.classList.remove('hidden');
+        loanNote.innerText = "含車貸期供";
+      } else {
+        cashBtn.className = "px-3 py-1 font-medium rounded-md bg-white text-brand-700 shadow-sm transition";
+        loanBtn.className = "px-3 py-1 font-medium rounded-md text-slate-600 hover:text-slate-900 transition";
+        loanPanel.classList.add('hidden');
+        loanRow.classList.add('hidden');
+        loanNote.innerText = "無車貸期供 (全款付清)";
+      }
+      calculateAll();
+    }
+
+    // Presets handler
+    function applyPreset(scenario) {
+      if (scenario === 'entry') {
+        // 國民小車: 75萬, 存2年, 現金/小額貸, 1.5L
+        document.getElementById('car-price').value = 750000;
+        document.getElementById('current-savings').value = 150000;
+        document.getElementById('savings-years').value = 2.5;
+        document.getElementById('monthly-income').value = 45000;
+        document.getElementById('down-payment-ratio').value = 30;
+        document.getElementById('loan-years').value = '5';
+        document.getElementById('loan-rate').value = 2.8;
+        document.getElementById('fee-registration').value = 3500;
+        document.getElementById('fee-plate').value = 2000;
+        document.getElementById('fee-accessories').value = 18000;
+        document.getElementById('engine-tax-bracket').value = '11920'; // 1.2-1.8L
+        document.getElementById('insurance-plan').value = '18000'; // 丙式
+        document.getElementById('fee-parking-fixed').value = 2500;
+        document.getElementById('monthly-km').value = 1000;
+        document.getElementById('fuel-economy').value = 16.0;
+        document.getElementById('fuel-price').value = 31.5;
+        document.getElementById('fee-maintenance-yearly').value = 12000;
+        document.getElementById('fee-etag-monthly').value = 400;
+        document.getElementById('fee-misc-monthly').value = 800;
+        setPaymentType('loan');
+      } else if (scenario === 'suv') {
+        // 百萬家庭休旅: 120萬, 存3年, 2.0L
+        document.getElementById('car-price').value = 1200000;
+        document.getElementById('current-savings').value = 250000;
+        document.getElementById('savings-years').value = 3;
+        document.getElementById('monthly-income').value = 75000;
+        document.getElementById('down-payment-ratio').value = 30;
+        document.getElementById('loan-years').value = '5';
+        document.getElementById('loan-rate').value = 2.8;
+        document.getElementById('fee-registration').value = 3500;
+        document.getElementById('fee-plate').value = 2000;
+        document.getElementById('fee-accessories').value = 28000;
+        document.getElementById('engine-tax-bracket').value = '17410'; // 1.8-2.4L
+        document.getElementById('insurance-plan').value = '36000'; // 乙式
+        document.getElementById('fee-parking-fixed').value = 3800;
+        document.getElementById('monthly-km').value = 1300;
+        document.getElementById('fuel-economy').value = 13.5;
+        document.getElementById('fuel-price').value = 31.5;
+        document.getElementById('fee-maintenance-yearly').value = 18000;
+        document.getElementById('fee-etag-monthly').value = 600;
+        document.getElementById('fee-misc-monthly').value = 1200;
+        setPaymentType('loan');
+      } else if (scenario === 'ev') {
+        // 豪華純電車: 220萬, 存4年, 免稅, 乙式
+        document.getElementById('car-price').value = 2200000;
+        document.getElementById('current-savings').value = 600000;
+        document.getElementById('savings-years').value = 4;
+        document.getElementById('monthly-income').value = 130000;
+        document.getElementById('down-payment-ratio').value = 40;
+        document.getElementById('loan-years').value = '5';
+        document.getElementById('loan-rate').value = 2.6;
+        document.getElementById('fee-registration').value = 4000;
+        document.getElementById('fee-plate').value = 3000;
+        document.getElementById('fee-accessories').value = 40000;
+        document.getElementById('engine-tax-bracket').value = '0'; // EV免稅
+        document.getElementById('insurance-plan').value = '52000'; // EV乙式較高
+        // 自訂保險以對應EV較高保費
+        document.getElementById('custom-ins-input').value = 52000;
+        document.getElementById('fee-parking-fixed').value = 4500;
+        document.getElementById('monthly-km').value = 1500;
+        document.getElementById('fuel-economy').value = 6.2; // 6.2 km/kWh
+        document.getElementById('fuel-price').value = 6.5; // 每度電平均 6.5
+        document.getElementById('fee-maintenance-yearly').value = 10000; // 電車少保養
+        document.getElementById('fee-etag-monthly').value = 800;
+        document.getElementById('fee-misc-monthly').value = 1500;
+        setPaymentType('loan');
+      }
+      toggleCustomTaxInputs();
+      toggleCustomInsInputs();
+      calculateAll();
+      showToast('已套用 ' + (scenario==='entry'?'國民小車':scenario==='suv'?'百萬主流休旅':'豪華純電車') + ' 情境預設值！');
+    }
+
+    function toggleCustomTaxInputs() {
+      const select = document.getElementById('engine-tax-bracket');
+      const customPanel = document.getElementById('custom-tax-panel');
+      if (select.value === 'custom') {
+        customPanel.classList.remove('hidden');
+      } else {
+        customPanel.classList.add('hidden');
+      }
+    }
+
+    function toggleCustomInsInputs() {
+      const select = document.getElementById('insurance-plan');
+      const customPanel = document.getElementById('custom-ins-panel');
+      if (select.value === 'custom') {
+        customPanel.classList.remove('hidden');
+      } else {
+        customPanel.classList.add('hidden');
+      }
+    }
+
+    // Main Calculation Engine
+    function calculateAll() {
+      // 1. Inputs Extraction
+      const carPrice = Math.max(0, parseFloat(document.getElementById('car-price').value) || 0);
+      const currentSavings = Math.max(0, parseFloat(document.getElementById('current-savings').value) || 0);
+      const savingsYears = parseFloat(document.getElementById('savings-years').value) || 3;
+      const savingsMonths = Math.max(1, Math.round(savingsYears * 12));
+      const monthlyIncome = Math.max(1, parseFloat(document.getElementById('monthly-income').value) || 1);
+
+      // Display sync
+      document.getElementById('savings-years-display').innerText = savingsYears + ' 年';
+      document.getElementById('savings-months-display').innerText = savingsMonths;
+
+      // Delivery & Upfront Costs
+      const feeReg = Math.max(0, parseFloat(document.getElementById('fee-registration').value) || 0);
+      const feePlate = Math.max(0, parseFloat(document.getElementById('fee-plate').value) || 0);
+      const feeAcc = Math.max(0, parseFloat(document.getElementById('fee-accessories').value) || 0);
+      const upfrontDeliveryTotal = feeReg + feePlate + feeAcc;
+      document.getElementById('delivery-total-display').innerText = formatNT(upfrontDeliveryTotal);
+
+      // Loan or Cash Setup
+      let downPayment = carPrice;
+      let loanAmount = 0;
+      let monthlyLoanPayment = 0;
+      let loanMonths = 0;
+      let totalInterest = 0;
+
+      if (paymentType === 'loan') {
+        const dpRatio = Math.min(100, Math.max(0, parseFloat(document.getElementById('down-payment-ratio').value) || 0));
+        downPayment = carPrice * (dpRatio / 100);
+        loanAmount = Math.max(0, carPrice - downPayment);
+        const loanYears = parseInt(document.getElementById('loan-years').value) || 5;
+        loanMonths = loanYears * 12;
+        const annualRate = Math.max(0, parseFloat(document.getElementById('loan-rate').value) || 0);
+
+        document.getElementById('down-payment-amt-display').innerText = formatNT(downPayment);
+
+        // PMT loan monthly formula
+        if (loanAmount > 0 && annualRate > 0) {
+          const monthlyRate = (annualRate / 100) / 12;
+          monthlyLoanPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanMonths)) / (Math.pow(1 + monthlyRate, loanMonths) - 1);
+          totalInterest = (monthlyLoanPayment * loanMonths) - loanAmount;
+        } else if (loanAmount > 0) {
+          monthlyLoanPayment = loanAmount / loanMonths;
+          totalInterest = 0;
         }
+      }
 
-        // 切換分頁標籤
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('view-simulation').classList.add('hidden');
-            document.getElementById('view-property').classList.add('hidden');
+      // Total Capital Needed Before Car Delivery
+      // If Cash: target car price + delivery fees
+      // If Loan: down payment + delivery fees
+      const totalCapitalNeeded = (paymentType === 'loan' ? downPayment : carPrice) + upfrontDeliveryTotal;
+      const netSavingsNeeded = Math.max(0, totalCapitalNeeded - currentSavings);
+      const monthlySavingsNeeded = netSavingsNeeded / savingsMonths;
 
-            if (tab === 'simulation') {
-                document.getElementById('tab-simulation').classList.add('active');
-                document.getElementById('view-simulation').classList.remove('hidden');
-            } else {
-                document.getElementById('tab-property').classList.add('active');
-                document.getElementById('view-property').classList.remove('hidden');
+      // Ongoing Ownership Costs (Monthly and Yearly)
+      // Tax
+      const taxSelect = document.getElementById('engine-tax-bracket').value;
+      let annualTax = 0;
+      if (taxSelect === 'custom') {
+        annualTax = parseFloat(document.getElementById('custom-tax-input').value) || 0;
+      } else {
+        annualTax = parseFloat(taxSelect) || 0;
+      }
+      const monthlyTax = annualTax / 12;
+
+      // Insurance
+      const insSelect = document.getElementById('insurance-plan').value;
+      let annualInsurance = 0;
+      if (insSelect === 'custom') {
+        annualInsurance = parseFloat(document.getElementById('custom-ins-input').value) || 0;
+      } else {
+        annualInsurance = parseFloat(insSelect) || 0;
+      }
+      const monthlyInsurance = annualInsurance / 12;
+
+      // Parking Fixed
+      const monthlyParkingFixed = Math.max(0, parseFloat(document.getElementById('fee-parking-fixed').value) || 0);
+
+      // Fuel / Electricity
+      const monthlyKm = Math.max(0, parseFloat(document.getElementById('monthly-km').value) || 0);
+      const fuelEconomy = Math.max(0.1, parseFloat(document.getElementById('fuel-economy').value) || 1);
+      const fuelPrice = Math.max(0, parseFloat(document.getElementById('fuel-price').value) || 0);
+      const monthlyFuelCost = (monthlyKm / fuelEconomy) * fuelPrice;
+
+      // Maintenance
+      const annualMaintenance = Math.max(0, parseFloat(document.getElementById('fee-maintenance-yearly').value) || 0);
+      const monthlyMaintenance = annualMaintenance / 12;
+
+      // Misc (eTag + Temp Parking/Detailing)
+      const monthlyEtag = Math.max(0, parseFloat(document.getElementById('fee-etag-monthly').value) || 0);
+      const monthlyMisc = Math.max(0, parseFloat(document.getElementById('fee-misc-monthly').value) || 0);
+      const monthlyOtherMisc = monthlyEtag + monthlyMisc;
+
+      // Total Monthly TCO
+      // When during loan: include monthlyLoanPayment
+      const monthlyRunningCostWithoutLoan = monthlyTax + monthlyInsurance + monthlyParkingFixed + monthlyFuelCost + monthlyMaintenance + monthlyOtherMisc;
+      const monthlyTotalWithLoan = monthlyRunningCostWithoutLoan + (paymentType === 'loan' ? monthlyLoanPayment : 0);
+      
+      // Annual Recurring Running Cost (Excludes pure equity asset purchase)
+      const annualPureRunningCost = (monthlyRunningCostWithoutLoan * 12);
+
+      // Update DOM Indicators
+      document.getElementById('kpi-monthly-savings').innerText = formatNT(monthlySavingsNeeded);
+      document.getElementById('kpi-total-target-needed').innerText = formatNT(totalCapitalNeeded);
+      document.getElementById('kpi-monthly-tco').innerText = formatNT(monthlyTotalWithLoan);
+      document.getElementById('kpi-yearly-tco').innerText = formatNT(annualPureRunningCost);
+
+      // Financial Health Gauge
+      const incomeRatio = (monthlyTotalWithLoan / monthlyIncome) * 100;
+      const ratioDisplay = document.getElementById('kpi-income-ratio');
+      const healthBadge = document.getElementById('health-badge');
+      const healthProgress = document.getElementById('health-progress');
+      const healthAdvice = document.getElementById('health-advice');
+
+      ratioDisplay.innerText = incomeRatio.toFixed(1) + '%';
+      healthProgress.style.width = Math.min(100, Math.max(5, incomeRatio)) + '%';
+
+      if (incomeRatio <= 20) {
+        healthBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        healthBadge.innerText = "🟢 財務安全無虞";
+        healthProgress.className = "bg-emerald-500 h-2.5 rounded-full transition-all duration-500";
+        healthAdvice.innerText = "💡 養車總支出佔月薪比例低於 20%，財務處於非常健康的餘裕區間，生活品質與儲蓄投資不受排擠。";
+      } else if (incomeRatio <= 30) {
+        healthBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        healthBadge.innerText = "🟡 負擔尚屬可控";
+        healthProgress.className = "bg-amber-500 h-2.5 rounded-full transition-all duration-500";
+        healthAdvice.innerText = "⚠️ 養車支出佔月薪 20%~30%，若遇大保養、輪胎更換或年繳稅金月份可能稍感壓力，建議備妥 3~6 個月應急預備金。";
+      } else {
+        healthBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30";
+        healthBadge.innerText = "🔴 財務負擔偏重";
+        healthProgress.className = "bg-rose-500 h-2.5 rounded-full transition-all duration-500";
+        healthAdvice.innerText = "🚨 養車支出已超過月薪的 30%，容易大幅擠壓其他投資或生活開銷。建議考慮延長存錢期程、提高自備款或挑選排氣量較小的入門級距。";
+      }
+
+      // Update Breakdown List
+      document.getElementById('detail-loan').innerText = paymentType === 'loan' ? formatNT(monthlyLoanPayment) : '全款無貸款';
+      document.getElementById('detail-fuel').innerText = formatNT(monthlyFuelCost);
+      document.getElementById('detail-parking-fixed').innerText = formatNT(monthlyParkingFixed);
+      document.getElementById('detail-tax').innerText = formatNT(monthlyTax);
+      document.getElementById('detail-insurance').innerText = formatNT(monthlyInsurance);
+      document.getElementById('detail-maintenance').innerText = formatNT(monthlyMaintenance);
+      document.getElementById('detail-misc').innerText = formatNT(monthlyOtherMisc);
+
+      // Update Charts
+      updateSavingsChart(currentSavings, totalCapitalNeeded, monthlySavingsNeeded, savingsMonths);
+      updateCostBreakdownChart(
+        paymentType === 'loan' ? monthlyLoanPayment : 0,
+        monthlyFuelCost,
+        monthlyParkingFixed,
+        monthlyTax,
+        monthlyInsurance,
+        monthlyMaintenance,
+        monthlyOtherMisc
+      );
+    }
+
+    // Chart 1: Savings Growth Timeline Curve
+    function updateSavingsChart(startSavings, targetCapital, monthlySave, months) {
+      const ctx = document.getElementById('savingsChart').getContext('2d');
+      const labels = [];
+      const savingsData = [];
+      const targetLine = [];
+
+      const step = Math.max(1, Math.floor(months / 6));
+      for (let m = 0; m <= months; m += step) {
+        labels.push(m === 0 ? '現在' : m + ' 個月');
+        const accumulated = Math.min(targetCapital, startSavings + (monthlySave * m));
+        savingsData.push(Math.round(accumulated));
+        targetLine.push(Math.round(targetCapital));
+      }
+      if (months % step !== 0) {
+        labels.push(months + ' 個月 (達標)');
+        savingsData.push(Math.round(targetCapital));
+        targetLine.push(Math.round(targetCapital));
+      }
+
+      if (savingsChartInstance) {
+        savingsChartInstance.destroy();
+      }
+
+      savingsChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '預估存款累積',
+              data: savingsData,
+              borderColor: '#4f46e5',
+              backgroundColor: 'rgba(79, 70, 229, 0.12)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#4f46e5',
+              pointRadius: 3
+            },
+            {
+              label: '目標門檻總額',
+              data: targetLine,
+              borderColor: '#f59e0b',
+              borderWidth: 1.5,
+              borderDash: [5, 5],
+              fill: false,
+              pointRadius: 0
             }
-        }
-
-        // 載入與儲存 LocalStorage
-        function loadSettings() {
-            Object.keys(defaultSettings).forEach(key => {
-                const el = document.getElementById(key);
-                if (!el) return;
-                const saved = localStorage.getItem('yicheng_all_' + key);
-                if (el.type === 'checkbox') {
-                    el.checked = saved !== null ? (saved === 'true') : defaultSettings[key];
-                } else {
-                    el.value = saved !== null ? saved : defaultSettings[key];
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { boxWidth: 12, font: { size: 10 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': ' + formatNT(context.parsed.y);
                 }
-            });
-
-            const savedRates = localStorage.getItem('yicheng_all_rateData');
-            if (savedRates) {
-                try { rateData = JSON.parse(savedRates); } catch (e) { console.error(e); }
+              }
             }
-            renderRateRows();
-        }
-
-        function saveSettings() {
-            Object.keys(defaultSettings).forEach(key => {
-                const el = document.getElementById(key);
-                if (!el) return;
-                if (el.type === 'checkbox') {
-                    localStorage.setItem('yicheng_all_' + key, el.checked);
-                } else {
-                    localStorage.setItem('yicheng_all_' + key, el.value);
-                }
-            });
-            localStorage.setItem('yicheng_all_rateData', JSON.stringify(rateData));
-        }
-
-        function resetAllDefaults() {
-            if (confirm("確定要將所有設定恢復至預設值嗎？")) {
-                localStorage.clear();
-                rateData = [{ start: 1, rate: 2.26 }, { start: 37, rate: 2.41 }];
-                loadSettings();
-                recalculateAll();
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: function(value) {
+                  return 'NT$ ' + (value / 10000) + '萬';
+                },
+                font: { size: 10 }
+              },
+              grid: { color: '#f1f5f9' }
+            },
+            x: {
+              ticks: { font: { size: 10 } },
+              grid: { display: false }
             }
+          }
         }
+      });
+    }
 
-        // 階梯利率介面管理
-        function renderRateRows() {
-            const container = document.getElementById('rateContainer');
-            container.innerHTML = '';
-            rateData.forEach((item, index) => {
-                const row = document.createElement('div');
-                row.className = 'flex items-center gap-2 text-xs bg-slate-50 p-2 rounded border border-slate-200';
-                row.innerHTML = `
-                    <span class="text-slate-500 font-medium">第</span>
-                    <input type="number" min="1" value="${item.start}" class="w-16 bg-white border border-slate-300 rounded px-1.5 py-1 text-center font-bold" onchange="updateRate(${index}, 'start', this.value)">
-                    <span class="text-slate-500 font-medium">期起，年利率:</span>
-                    <input type="number" step="0.01" value="${item.rate}" class="w-20 bg-white border border-slate-300 rounded px-1.5 py-1 text-center font-bold text-indigo-700" onchange="updateRate(${index}, 'rate', this.value)">
-                    <span class="text-slate-500 font-medium">%</span>
-                    ${index > 0 ? `<button onclick="removeRate(${index})" class="text-rose-500 hover:text-rose-700 ml-auto font-bold cursor-pointer">✕ 刪除</button>` : ''}
-                `;
-                container.appendChild(row);
-            });
-        }
+    // Chart 2: Cost Breakdown Donut Chart
+    function updateCostBreakdownChart(loan, fuel, parking, tax, ins, maint, misc) {
+      const ctx = document.getElementById('costBreakdownChart').getContext('2d');
+      const dataItems = [];
+      const labels = [];
+      const colors = [];
 
-        function addRateRow() {
-            const lastStart = rateData[rateData.length - 1].start;
-            rateData.push({ start: parseInt(lastStart) + 12, rate: 2.41 });
-            renderRateRows();
-            recalculateAll();
-        }
+      if (loan > 0) {
+        labels.push('車貸本息');
+        dataItems.push(Math.round(loan));
+        colors.push('#4f46e5'); // Indigo
+      }
+      labels.push('燃油/電費');
+      dataItems.push(Math.round(fuel));
+      colors.push('#ef4444'); // Red
 
-        function removeRate(index) {
-            rateData.splice(index, 1);
-            renderRateRows();
-            recalculateAll();
-        }
+      labels.push('固定車位');
+      dataItems.push(Math.round(parking));
+      colors.push('#3b82f6'); // Blue
 
-        function updateRate(index, field, value) {
-            rateData[index][field] = parseFloat(value) || 0;
-            rateData.sort((a, b) => a.start - b.start);
-            recalculateAll();
-        }
+      labels.push('牌照與燃料稅');
+      dataItems.push(Math.round(tax));
+      colors.push('#f59e0b'); // Amber
 
-        // --- 核心計算 1: 房地產與房貸精算 (期數 1:1 同步) ---
-        function calculateProperty() {
-            const sellPrice = parseFloat(document.getElementById('sellPrice').value) || 0;
-            const buyPrice = parseFloat(document.getElementById('buyPrice').value) || 0;
-            const renovationCost = parseFloat(document.getElementById('renovationCost').value) || 0;
-            const taxRate = parseFloat(document.getElementById('holdingPeriod').value) || 0;
-            const agencyFeePct = (parseFloat(document.getElementById('agencyFeePct').value) || 0) / 100;
-            const docFee = parseFloat(document.getElementById('docFee').value) || 0;
-            const landTax = parseFloat(document.getElementById('landTax').value) || 0;
+      labels.push('汽車保險');
+      dataItems.push(Math.round(ins));
+      colors.push('#10b981'); // Emerald
 
-            const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
-            const totalMonths = parseInt(document.getElementById('totalMonths').value) || 360;
-            const gracePeriod = parseInt(document.getElementById('gracePeriod').value) || 0;
-            const monthsPaid = parseInt(document.getElementById('monthsPaid').value) || 0;
+      labels.push('保養耗材');
+      dataItems.push(Math.round(maint));
+      colors.push('#8b5cf6'); // Purple
 
-            // 1. 產生完整貸款攤還表 (包含寬限期與階梯利率)
-            let currentBalance = loanAmount;
-            let schedule = [];
-            const sortedRates = [...rateData].sort((a, b) => a.start - b.start);
+      labels.push('高速通行與雜費');
+      dataItems.push(Math.round(misc));
+      colors.push('#64748b'); // Slate
 
-            for (let month = 1; month <= totalMonths; month++) {
-                let currentRatePct = sortedRates[0].rate;
-                for (const r of sortedRates) {
-                    if (month >= r.start) currentRatePct = r.rate;
+      if (costBreakdownChartInstance) {
+        costBreakdownChartInstance.destroy();
+      }
+
+      costBreakdownChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: dataItems,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 10,
+                font: { size: 10 },
+                padding: 10
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                  return context.label + ': ' + formatNT(val) + ' (' + pct + '%)';
                 }
-                const monthlyRate = (currentRatePct / 100) / 12;
-                const interestPayment = currentBalance * monthlyRate;
-                let principalPayment = 0;
-                let monthlyPayment = interestPayment;
-
-                if (month > gracePeriod) {
-                    const remainingPeriods = totalMonths - month + 1;
-                    if (monthlyRate > 0) {
-                        monthlyPayment = currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, remainingPeriods)) / (Math.pow(1 + monthlyRate, remainingPeriods) - 1);
-                    } else {
-                        monthlyPayment = currentBalance / remainingPeriods;
-                    }
-                    principalPayment = monthlyPayment - interestPayment;
-                }
-
-                currentBalance -= principalPayment;
-                if (currentBalance < 0) currentBalance = 0;
-
-                schedule.push({
-                    month, rate: currentRatePct, monthlyPayment, interestPayment, principalPayment, balance: currentBalance
-                });
+              }
             }
-
-            // 2. 當前已繳期數之剩餘房貸本金
-            cachedRemainingLoan = loanAmount;
-            if (monthsPaid > 0 && monthsPaid <= totalMonths) {
-                cachedRemainingLoan = schedule[monthsPaid - 1].balance;
-            } else if (monthsPaid > totalMonths) {
-                cachedRemainingLoan = 0;
-            }
-
-            // 3. 已繳期數直接等同於目標期數 (1:1 對應)
-            const targetStage2Month = monthsPaid > 0 ? Math.min(monthsPaid, totalMonths) : 0;
-            let stage2MonthlyPayment = 0;
-            let subtext = "";
-
-            if (targetStage2Month > 0) {
-                stage2MonthlyPayment = schedule[targetStage2Month - 1].monthlyPayment;
-                if (targetStage2Month <= gracePeriod) {
-                    subtext = "仍在寬限期內，每月僅需繳納利息";
-                } else {
-                    subtext = "寬限期已過，為本息平均攤還金額";
-                }
-            } else {
-                stage2MonthlyPayment = 0;
-                subtext = "請輸入已繳期數以進行計算";
-            }
-
-            cachedStage2Mortgage = stage2MonthlyPayment;
-
-            // 4. 自動將動態計算結果回填至模擬器輸入框中
-            const mortgageInput = document.getElementById('tw_mortgage');
-            if (mortgageInput) {
-                mortgageInput.value = Math.round(stage2MonthlyPayment);
-            }
-
-            // 5. 更新卡片資訊
-            const titleEl = document.getElementById('stage2_mortgage_title');
-            if (titleEl) {
-                titleEl.innerText = `回台時 (第 ${targetStage2Month} 期) 預估月付房貸`;
-            }
-            document.getElementById('stage2_calc_mortgage').innerText = formatCurrency(stage2MonthlyPayment) + " 元";
-            document.getElementById('stage2_mortgage_subtext').innerText = subtext;
-            document.getElementById('remainingBalanceDisplay').innerText = formatCurrency(cachedRemainingLoan) + " 元";
-
-            // 6. 房產賣出交易成本與淨利 (精算實質到手現金)
-            const agencyFeeAmount = sellPrice * agencyFeePct;
-            const escrowFee = sellPrice * 0.00015;
-            const totalSellingCosts = agencyFeeAmount + escrowFee + docFee;
-            const taxableIncome = Math.max(0, sellPrice - buyPrice - renovationCost - totalSellingCosts);
-            const capitalGainsTax = taxableIncome * taxRate;
-
-            cachedPropertyNetProfit = Math.max(0, sellPrice - cachedRemainingLoan - totalSellingCosts - landTax - capitalGainsTax);
-
-            document.getElementById('sumSellPrice').innerText = formatCurrency(sellPrice);
-            document.getElementById('sumLoanBalance').innerText = "- " + formatCurrency(cachedRemainingLoan);
-            document.getElementById('sumAgencyFee').innerText = "- " + formatCurrency(agencyFeeAmount);
-            document.getElementById('sumEscrowFee').innerText = "- " + formatCurrency(escrowFee);
-            document.getElementById('sumLandAndDocFee').innerText = "- " + formatCurrency(landTax + docFee);
-            document.getElementById('sumTaxRate').innerText = (taxRate * 100).toFixed(0);
-            document.getElementById('sumCapitalGainsTax').innerText = "- " + formatCurrency(capitalGainsTax);
-            document.getElementById('finalNetProfit').innerText = formatCurrency(cachedPropertyNetProfit) + " 元";
-            document.getElementById('span_house_net_profit_inject').innerText = (cachedPropertyNetProfit / 10000).toFixed(1);
-
-            // 7. 更新前 60 期攤還明細表
-            const tbody = document.getElementById('amortizationTableBody');
-            tbody.innerHTML = '';
-            for (let i = 0; i < Math.min(60, schedule.length); i++) {
-                const row = schedule[i];
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-1.5 text-center font-bold text-slate-500">${row.month}</td>
-                        <td class="p-1.5">${row.rate.toFixed(2)}%</td>
-                        <td class="p-1.5 font-bold">${formatCurrency(row.monthlyPayment)}</td>
-                        <td class="p-1.5 text-emerald-600">${formatCurrency(row.principalPayment)}</td>
-                        <td class="p-1.5 font-medium">${formatCurrency(row.balance)}</td>
-                    </tr>
-                `;
-            }
+          },
+          cutout: '65%'
         }
+      });
+    }
 
-        // --- 核心計算 2: 生涯動態財富模擬 ---
-        function updateSimulation() {
-            try {
-                saveSettings();
-                calculateProperty(); // 確保房貸與房產數據即時更新
+    // Toast message helper
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-message');
+      text.innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2600);
+    }
 
-                const current_tw = (parseFloat(document.getElementById('current_tw').value) || 0) * 10000;
-                const current_us = (parseFloat(document.getElementById('current_us').value) || 0) * 10000;
-                const tw_return_rate = (parseFloat(document.getElementById('tw_return_rate').value) || 0) / 100;
-                const us_return_rate = (parseFloat(document.getElementById('us_return_rate').value) || 0) / 100;
-                const tw_div_rate = (parseFloat(document.getElementById('tw_div_rate').value) || 0) / 100;
+    // Copy Summary Text
+    document.getElementById('copy-summary-btn').addEventListener('click', () => {
+      const carPrice = document.getElementById('car-price').value;
+      const years = document.getElementById('savings-years').value;
+      const monthlySave = document.getElementById('kpi-monthly-savings').innerText;
+      const monthlyTco = document.getElementById('kpi-monthly-tco').innerText;
+      const yearlyTco = document.getElementById('kpi-yearly-tco').innerText;
+      const incomeRatio = document.getElementById('kpi-income-ratio').innerText;
 
-                const india_tw = parseFloat(document.getElementById('india_tw').value) || 0;
-                const india_us = parseFloat(document.getElementById('india_us').value) || 0;
-                
-                const tw_salary = parseFloat(document.getElementById('tw_salary').value) || 0;
-                let tw_rent = parseFloat(document.getElementById('tw_rent').value) || 0;
-                let tw_mortgage = parseFloat(document.getElementById('tw_mortgage').value) || 0;
-                const tw_living = parseFloat(document.getElementById('tw_living').value) || 0;
-                const tw_tw = parseFloat(document.getElementById('tw_tw').value) || 0;
-                const tw_us = parseFloat(document.getElementById('tw_us').value) || 0;
+      const summary = `【Taiwan CarTCO 台灣買車存錢與持有成本試算報告】\n` +
+        `• 目標車價：NT$ ${Number(carPrice).toLocaleString()}\n` +
+        `• 設定存錢期程：${years} 年\n` +
+        `• 每月需存金額：${monthlySave} / 月\n` +
+        `• 交車後平均養車月支出：${monthlyTco} / 月\n` +
+        `• 每年常態持有總成本 (TCO)：${yearlyTco} / 年\n` +
+        `• 養車佔月薪比例：${incomeRatio}\n` +
+        `---\n` +
+        `使用台灣專屬購車試算器計算產出。`;
 
-                const isSellingHouse = document.getElementById('scenario_sell_house').checked;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(summary).then(() => {
+          showToast('已複製分析摘要到剪貼簿！');
+        }).catch(() => {
+          fallbackCopyText(summary);
+        });
+      } else {
+        fallbackCopyText(summary);
+      }
+    });
 
-                // 賣房情境處理
-                if (isSellingHouse) {
-                    tw_rent = 0;
-                    tw_mortgage = 0;
-                    document.getElementById('wrapper_tw_rent').style.opacity = '0.4';
-                    document.getElementById('badge_scenario').innerText = "策略：回台賣房結清轉投資";
-                    document.getElementById('badge_scenario').className = "text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold";
-                    document.getElementById('top_mortgage_status').innerText = "已於 2032 結清";
-                } else {
-                    document.getElementById('wrapper_tw_rent').style.opacity = '1';
-                    document.getElementById('badge_scenario').innerText = "策略：長期持有房產收租";
-                    document.getElementById('badge_scenario').className = "text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold";
-                    document.getElementById('top_mortgage_status').innerText = "房貸本息自動連動中";
-                }
+    function fallbackCopyText(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('已複製分析摘要到剪貼簿！');
+      } catch (err) {
+        showToast('複製失敗，請手動選取');
+      }
+      document.body.removeChild(textArea);
+    }
 
-                // 更新 Slider 數值文字
-                ['tw_return_rate', 'us_return_rate', 'tw_div_rate'].forEach(id => {
-                    document.getElementById('val_' + id).innerText = (parseFloat(document.getElementById(id).value) || 0).toFixed(1) + '%';
-                });
-                ['india_tw', 'india_us', 'tw_salary', 'tw_rent', 'tw_living', 'tw_tw', 'tw_us'].forEach(id => {
-                    document.getElementById('val_' + id).innerText = formatCurrency(parseFloat(document.getElementById(id).value) || 0);
-                });
+    // Event Listeners Binding
+    const inputsToWatch = [
+      'car-price', 'current-savings', 'savings-years', 'monthly-income',
+      'down-payment-ratio', 'loan-years', 'loan-rate',
+      'fee-registration', 'fee-plate', 'fee-accessories',
+      'engine-tax-bracket', 'custom-tax-input',
+      'insurance-plan', 'custom-ins-input',
+      'fee-parking-fixed', 'monthly-km', 'fuel-economy', 'fuel-price',
+      'fee-maintenance-yearly', 'fee-etag-monthly', 'fee-misc-monthly'
+    ];
 
-                // 【核心修正】頂部總覽卡片全面改用「實際到手金額 (實拿現款)」
-                const totalFinancial = (current_tw + current_us) / 10000;
-                const sellPrice = parseFloat(document.getElementById('sellPrice').value) || 0;
-                const houseNetProfitWan = cachedPropertyNetProfit / 10000; // 實質變現淨值 (萬)
-                const trueNetWorth = totalFinancial + houseNetProfitWan;   // 金融資產 + 房產實拿淨額
-                const totalTaxesAndFees = Math.max(0, (sellPrice - cachedRemainingLoan - cachedPropertyNetProfit) / 10000);
+    inputsToWatch.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => {
+          if (id === 'engine-tax-bracket') toggleCustomTaxInputs();
+          if (id === 'insurance-plan') toggleCustomInsInputs();
+          calculateAll();
+        });
+        el.addEventListener('change', () => {
+          if (id === 'engine-tax-bracket') toggleCustomTaxInputs();
+          if (id === 'insurance-plan') toggleCustomInsInputs();
+          calculateAll();
+        });
+      }
+    });
 
-                document.getElementById('top_financial_assets').innerText = formatCurrency(totalFinancial) + " 萬";
-                document.getElementById('top_financial_split').innerText = `(台: ${formatCurrency(current_tw/10000)}萬 / 美: ${formatCurrency(current_us/10000)}萬)`;
-                
-                // 顯示精確到小數點一位的實質淨值
-                document.getElementById('top_house_equity').innerText = houseNetProfitWan.toFixed(1) + " 萬";
-                document.getElementById('top_house_loan_sub').innerText = `貸款: ${formatCurrency(cachedRemainingLoan/10000)}萬 | 稅費: ${totalTaxesAndFees.toFixed(1)}萬`;
-                document.getElementById('top_total_networth').innerText = formatCurrency(trueNetWorth) + " 萬";
-
-                // 第一階段：外派 5 年資產累積
-                let tw_port = current_tw;
-                let us_port = current_us;
-                let chartLabels = ['現在'];
-                let chartDataTW = [tw_port / 10000];
-                let chartDataUS = [us_port / 10000];
-                let chartDataTotal = [(tw_port + us_port) / 10000];
-
-                for (let year = 1; year <= 5; year++) {
-                    tw_port = tw_port * (1 + tw_return_rate) + (india_tw * 12) * (1 + tw_return_rate / 2);
-                    us_port = us_port * (1 + us_return_rate) + (india_us * 12) * (1 + us_return_rate / 2);
-                    chartLabels.push('外派第 ' + year + ' 年');
-                    chartDataTW.push(tw_port / 10000);
-                    chartDataUS.push(us_port / 10000);
-                    chartDataTotal.push((tw_port + us_port) / 10000);
-                }
-
-                // 若回台時賣房，注入淨獲利至股市（各半配置）
-                if (isSellingHouse && cachedPropertyNetProfit > 0) {
-                    tw_port += (cachedPropertyNetProfit * 0.5);
-                    us_port += (cachedPropertyNetProfit * 0.5);
-                }
-
-                const total_at_tw = tw_port + us_port;
-                document.getElementById('span_stage1_asset').innerText = formatCurrency(total_at_tw / 10000);
-
-                // 回台第一年收支與平攤可用金
-                const base_income = tw_salary + tw_rent;
-                const total_invest = tw_tw + tw_us;
-                const total_fixed_expense = tw_mortgage + tw_living + total_invest;
-                const est_annual_dividend = tw_port * tw_div_rate;
-                const smoothed_monthly_dividend = est_annual_dividend / 12;
-                const smoothed_pocket_money = tw_living + ((base_income + smoothed_monthly_dividend) - total_fixed_expense);
-
-                document.getElementById('card_smoothed_money').innerText = formatCurrency(smoothed_pocket_money) + " 元";
-                document.getElementById('top_pocket_money').innerText = formatCurrency(smoothed_pocket_money) + " 元";
-
-                // 枯水期活存儲備水位
-                const h1_real_net = base_income - total_fixed_expense;
-                const emergencyEl = document.getElementById('val_emergency_fund');
-                if (h1_real_net < 0) {
-                    const required_fund = Math.abs(h1_real_net) * 6;
-                    emergencyEl.innerText = formatCurrency(required_fund) + " 元";
-                    document.getElementById('emergency_fund_card').className = "bg-amber-50 border border-amber-300 p-4 rounded-xl shadow-sm";
-                } else {
-                    emergencyEl.innerText = "0 元 (現金流充足)";
-                    document.getElementById('emergency_fund_card').className = "bg-emerald-50 border border-emerald-200 p-4 rounded-xl shadow-sm";
-                }
-
-                // 產出 1~12 月收支表
-                let current_running_tw = tw_port;
-                let current_running_us = us_port;
-                let tableHTML = "";
-
-                for (let month = 1; month <= 12; month++) {
-                    let real_m_dividend = 0;
-                    if (month >= 7) {
-                        real_m_dividend = (current_running_tw * tw_div_rate) / 6;
-                    }
-                    let real_m_net = (base_income + real_m_dividend) - total_fixed_expense;
-
-                    tableHTML += `
-                        <tr class="hover:bg-slate-50">
-                            <td class="p-2 font-bold ${month >= 7 ? 'text-blue-600' : 'text-slate-400'} text-center">${month} 月</td>
-                            <td class="p-2 ${month >= 7 ? 'bg-amber-50 text-amber-700' : 'text-slate-300'} font-bold text-right">+${formatCurrency(real_m_dividend)}</td>
-                            <td class="p-2 text-right">${formatCurrency(base_income)}</td>
-                            <td class="p-2 text-rose-600 text-right font-semibold">-${formatCurrency(total_fixed_expense)}</td>
-                            <td class="p-2 ${real_m_net >= 0 ? 'text-emerald-600' : 'text-rose-600'} font-bold text-right">${real_m_net >= 0 ? '+' : ''}${formatCurrency(real_m_net)}</td>
-                            <td class="p-2 bg-blue-50/70 text-blue-800 font-bold text-right">${formatCurrency(smoothed_pocket_money)}</td>
-                        </tr>
-                    `;
-
-                    current_running_tw = current_running_tw * (1 + tw_return_rate / 12) + tw_tw;
-                    current_running_us = current_running_us * (1 + us_return_rate / 12) + tw_us;
-                }
-                document.getElementById('detailed_month_table').innerHTML = tableHTML;
-
-                // 里程碑推算
-                const milestones = [25000000, 30000000, 40000000, 50000000];
-                const milestone_data = {};
-                let age = 35;
-                let total_port = tw_port + us_port;
-
-                milestones.forEach(m => {
-                    if (total_port >= m) milestone_data[m] = { age, tw: tw_port, us: us_port };
-                });
-
-                // 第二階段：回台 20 年長期投資
-                for (let year = 1; year <= 20; year++) {
-                    tw_port = tw_port * (1 + tw_return_rate) + (tw_tw * 12) * (1 + tw_return_rate / 2);
-                    us_port = us_port * (1 + us_return_rate) + (tw_us * 12) * (1 + us_return_rate / 2);
-                    total_port = tw_port + us_port;
-                    age++;
-
-                    if (year % 2 === 0) {
-                        chartLabels.push('回台第 ' + year + ' 年');
-                        chartDataTW.push(tw_port / 10000);
-                        chartDataUS.push(us_port / 10000);
-                        chartDataTotal.push(total_port / 10000);
-                    }
-
-                    milestones.forEach(m => {
-                        if (total_port >= m && !milestone_data[m]) {
-                            milestone_data[m] = { age, tw: tw_port, us: us_port };
-                        }
-                    });
-                }
-
-                // 繪製資產曲線
-                const ctx = document.getElementById('wealthChart').getContext('2d');
-                if (wealthChartInstance) wealthChartInstance.destroy();
-                wealthChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: chartLabels,
-                        datasets: [
-                            { label: '🎯 總金融資產', data: chartDataTotal, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', borderWidth: 3, fill: true, tension: 0.35 },
-                            { label: '🇺🇸 美股配置', data: chartDataUS, borderColor: '#10b981', borderDash: [4, 4], borderWidth: 2, tension: 0.35 },
-                            { label: '🇹🇼 台股配置', data: chartDataTW, borderColor: '#f59e0b', borderDash: [4, 4], borderWidth: 2, tension: 0.35 }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10 } } },
-                        scales: { y: { beginAtZero: true, ticks: { callback: v => v + ' 萬' } } }
-                    }
-                });
-
-                // 更新里程碑表格
-                milestones.forEach(m => {
-                    const m_str = m / 10000;
-                    if (milestone_data[m]) {
-                        document.getElementById('m_' + m_str).innerText = milestone_data[m].age + " 歲";
-                        const tw_pct = ((milestone_data[m].tw / m) * 100).toFixed(0);
-                        const us_pct = ((milestone_data[m].us / m) * 100).toFixed(0);
-                        document.getElementById('s_' + m_str).innerHTML = `
-                            <div class="flex items-center space-x-2 text-xs">
-                                <span class="text-amber-600 font-bold">台: ${formatCurrency(milestone_data[m].tw/10000)}萬 (${tw_pct}%)</span>
-                                <span class="text-emerald-600 font-bold border-l pl-2 border-slate-200">美: ${formatCurrency(milestone_data[m].us/10000)}萬 (${us_pct}%)</span>
-                            </div>
-                        `;
-                    } else {
-                        document.getElementById('m_' + m_str).innerText = ">55 歲";
-                        document.getElementById('s_' + m_str).innerText = "-";
-                    }
-                });
-
-                document.getElementById('error_banner').className = "hidden";
-            } catch (err) {
-                console.error(err);
-                document.getElementById('error_banner').className = "max-w-7xl mx-auto mb-4 bg-rose-600 text-white p-3 rounded-xl shadow-lg text-center font-bold block";
-            }
-        }
-
-        function recalculateAll() {
-            calculateProperty();
-            updateSimulation();
-        }
-
-        // 初始化掛載事件
-        window.onload = function() {
-            loadSettings();
-            recalculateAll();
-
-            document.querySelectorAll('input, select').forEach(el => {
-                el.addEventListener('input', recalculateAll);
-                el.addEventListener('change', recalculateAll);
-            });
-        };
-    </script>
+    // Window Onload initialization
+    window.onload = function() {
+      calculateAll();
+    };
+  </script>
 </body>
 </html>
